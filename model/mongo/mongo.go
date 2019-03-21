@@ -33,6 +33,22 @@ type DB struct {
 
 // NewDB sets up new MongoDB struct
 func NewDB(connection string, dbNm string) (model.DBHandler, error) {
+
+	/* client, err := mongo.Connect(context.TODO(), "mongodb://localhost:27017")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Check the connection
+	err = client.Ping(context.TODO(), nil)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Connected to MongoDB!") */
+
 	s, err := mgo.Dial(connection)
 	if err != nil {
 		return nil, err
@@ -159,12 +175,12 @@ func (db *DB) getGroupItems(q *model.Quote) error {
 	return nil
 }
 
-/* func (db *DB) getWindowItems(q *model.Quote) error {
+func (db *DB) getWindowItems(q *model.Quote) error {
 
 	s := db.getFreshSession()
 	defer s.Close()
 
-	col := s.DB(db.dbName).C(colJobsheetWindows)
+	col := s.DB(db.dbName).C(colJSWindows)
 	for _, i := range q.ItemIds.Window {
 		item := &model.Window{}
 		if false == bson.IsObjectIdHex(i) {
@@ -185,7 +201,7 @@ func (db *DB) getGroupItems(q *model.Quote) error {
 	}
 
 	return nil
-} */
+}
 
 /* func (db *DB) getOtherItems(q *model.Quote) error {
 
@@ -209,7 +225,7 @@ func (db *DB) getGroupItems(q *model.Quote) error {
 	return nil
 } */
 
-/* func (db *DB) getProductName(productID bson.ObjectId) (*model.Product, error) {
+func (db *DB) getProductName(productID bson.ObjectId) (*model.Product, error) {
 
 	s := db.getFreshSession()
 	defer s.Close()
@@ -220,7 +236,7 @@ func (db *DB) getGroupItems(q *model.Quote) error {
 		return p, err
 	}
 	return p, nil
-} */
+}
 
 /* func (db *DB) getCustomer(q *model.Quote) error {
 

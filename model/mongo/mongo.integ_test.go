@@ -70,6 +70,12 @@ func (suite *IntegSuite) TestGetGroupItems() {
 	suite.True(len(suite.q.Items.Group) > 0)
 }
 
+func (suite *IntegSuite) TestGetWindowItems() {
+	_ = suite.db.getQuote(suite.q, quoteID)
+	err := suite.db.getWindowItems(suite.q)
+	suite.NoError(err)
+}
+
 // TestIntegrationSuite function
 func TestIntegrationSuite(t *testing.T) {
 	suite.Run(t, new(IntegSuite))

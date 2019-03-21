@@ -17,7 +17,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Runtime: go1.x
-      CodeUri: s3://ca-universalwindows/pdf-lambda/64de5a24c7adf707129db218aa24f36b
+      CodeUri: s3://ca-universalwindows/pdf-lambda/f3850cb1a39b3fef9e07eb19783347b6
       Handler: /pdf
       Role:
         Fn::GetAtt:
@@ -27,6 +27,7 @@ Resources:
         Variables:
           Stage: prod
           thundra_apiKey: ${ThundraKey}
+          thundra_agent_lambda_report_cloudwatch_enable: true
       Timeout: 10
       Events:
         Create:

@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -29,9 +28,7 @@ func HandleRequest(req events.APIGatewayProxyRequest) (events.APIGatewayProxyRes
 	hdrs := make(map[string]string)
 	hdrs["Content-Type"] = "application/json"
 	t := time.Now()
-	// fmt.Printf(" %\n", )
 	log.Errorf("req with log: %+v\n", req.Body)
-	fmt.Printf("req with Printf %+v\n", req.Body)
 
 	// If this is a ping test, intercept and return
 	if req.HTTPMethod == "GET" {

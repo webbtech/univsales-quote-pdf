@@ -27,6 +27,7 @@ Resources:
         Variables:
           Stage: prod
           thundra_apiKey: ${ThundraKey}
+          thundra_agent_lambda_report_cloudwatch_enable: true
       Timeout: 10
       Events:
         Create:
