@@ -28,3 +28,11 @@
 [prune]
   go-tests = true
   unused-packages = true
+
+[[constraint]]
+  name = "github.com/thundra-io/thundra-lambda-agent-go"
+  version = "2.0.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/globalsign/mgo"

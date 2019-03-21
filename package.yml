@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Universal Sales PDF
+Parameters:
+  IAMUsername:
+    Description: Username of the IAM user for this service
+    Type: String
+    Default: sysadmin
+  BucketName:
+    Description: Bucket that stores pdfs
+    Type: String
+  ThundraKey:
+    Description: thundra.io API key
+    Type: String
+Resources:
+  Lambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: go1.x
+      CodeUri: s3://ca-universalwindows/pdf-lambda/64de5a24c7adf707129db218aa24f36b
+      Handler: /pdf
+      Role:
+        Fn::GetAtt:
+        - LambdaRole
+        - Arn
+      Environment:
+        Variables:
+          Stage: prod
+          thundra_apiKey: ${ThundraKey}
+      Timeout: 10
+      Events:
+        Create:
+          Type: Api
+          Properties:
+            Path: /
+            Method: post
+        Ping:
+          Type: Api
+          Properties:
+            Path: /
+            Method: get
+      Tags:
+        BillTo: Gales
+  ServerlessRestApi:
+    Type: AWS::Serverless::Api
+    DeletionPolicy: Retain
+    Properties:
+      StageName: Prod
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: FunctionSSMAccess
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - ssm:GetParametersByPath
+            Resource:
+              Fn::Sub: arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/prod/univsales-pdf*
+      - PolicyName: FunctionLogAccess
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: '*'
+      - PolicyName: FunctionXRayAccess
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - xray:PutTraceSegments
+            - xray:PutTelemetryRecords
+            Resource: '*'
+Outputs:
+  ProdDataEndpoint:
+    Description: API Prod stage endpoint
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/
