@@ -7,6 +7,9 @@ type defaults struct {
 	DBName     string `yaml:"DBName"`
 	DBPassword string `yaml:"DBPassword"`
 	DBUser     string `yaml:"DBUser"`
+	DocAuthor  string `yaml:"DocAuthor"`
+	HSTNumber  string `yaml:"HSTNumber"`
+	LogoURI    string `yaml:"LogoURI"`
 	S3Bucket   string `yaml:"S3Bucket"`
 	SsmPath    string `yaml:"SsmPath"`
 	Stage      string `yaml:"Stage"`
@@ -16,6 +19,9 @@ type config struct {
 	AWSRegion    string
 	DBConnectURL string
 	DBName       string
+	DocAuthor    string
+	HSTNumber    string
+	LogoURI      string
 	S3Bucket     string
 	Stage        StageEnvironment
 }

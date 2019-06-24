@@ -2,14 +2,16 @@ package application
 
 import (
 	"context"
-	"github.com/thundra-io/thundra-lambda-agent-go/constants"
 	"os"
 	"strings"
+
+	"github.com/thundra-io/thundra-lambda-agent-go/constants"
 
 	"github.com/aws/aws-lambda-go/lambdacontext"
 )
 
 var ApplicationName string
+var FunctionName string
 var ApplicationID string
 var ApplicationDomainName string
 var ApplicationClassName string
@@ -22,7 +24,6 @@ var LogStreamName string
 var FunctionARN string
 var ApplicationTags map[string]interface{}
 
-
 func init() {
 	ApplicationName = getApplicationName()
 	ApplicationID = getAppID()
@@ -31,6 +32,7 @@ func init() {
 	ApplicationVersion = getApplicationVersion()
 	ApplicationStage = getApplicationStage()
 	FunctionRegion = getFunctionRegion()
+	FunctionName = getFunctionName()
 	MemoryLimit = getMemoryLimit()
 	LogGroupName = getLogGroupName()
 	LogStreamName = getLogStreamName()
@@ -61,6 +63,11 @@ func getApplicationName() string {
 	if v != "" {
 		return v
 	}
+	return lambdacontext.FunctionName
+}
+
+// getFunctionName returns the lambda function's name
+func getFunctionName() string {
 	return lambdacontext.FunctionName
 }
 
@@ -136,4 +143,14 @@ func GetAwsRequestID(ctx context.Context) string {
 		return ""
 	}
 	return lc.AwsRequestID
+}
+
+// GetClientContext returns ClientContext object from context if available.
+func GetClientContext(ctx context.Context) (lambdacontext.ClientContext, bool) {
+	lc, ok := lambdacontext.FromContext(ctx)
+	if !ok {
+		// lambdaContext is not set
+		return lambdacontext.ClientContext{}, ok
+	}
+	return lc.ClientContext, ok
 }

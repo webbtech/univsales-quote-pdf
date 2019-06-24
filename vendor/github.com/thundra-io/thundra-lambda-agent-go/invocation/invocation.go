@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/thundra-io/thundra-lambda-agent-go/constants"
 	"github.com/thundra-io/thundra-lambda-agent-go/plugin"
 	"github.com/thundra-io/thundra-lambda-agent-go/utils"
 )
@@ -44,15 +45,26 @@ func (ip *invocationPlugin) Order() uint8 {
 }
 
 func (ip *invocationPlugin) BeforeExecution(ctx context.Context, request json.RawMessage) context.Context {
+	startTime, ctx := plugin.StartTimeFromContext(ctx)
 	ip.rootSpan = opentracing.SpanFromContext(ctx)
 	ip.data = &invocationData{
-		startTimestamp: utils.GetTimestamp(),
+		startTimestamp: startTime,
 	}
+
+	setInvocationTriggerTags(ctx, request)
+	if GetTag(constants.SpanTags["TRIGGER_CLASS_NAME"]) != nil {
+		triggerClassName, ok := GetTag(constants.SpanTags["TRIGGER_CLASS_NAME"]).(string)
+		if ok {
+			plugin.TriggerClassName = triggerClassName
+		}
+	}
+
 	return ctx
 }
 
-func (ip *invocationPlugin) AfterExecution(ctx context.Context, request json.RawMessage, response interface{}, err interface{}) []plugin.MonitoringDataWrapper {
-	ip.data.finishTimestamp = utils.GetTimestamp()
+func (ip *invocationPlugin) AfterExecution(ctx context.Context, request json.RawMessage, response interface{}, err interface{}) ([]plugin.MonitoringDataWrapper, context.Context) {
+	finishTime, ctx := plugin.EndTimeFromContext(ctx)
+	ip.data.finishTimestamp = finishTime
 	ip.data.duration = ip.data.finishTimestamp - ip.data.startTimestamp
 
 	if err != nil {
@@ -69,11 +81,12 @@ func (ip *invocationPlugin) AfterExecution(ctx context.Context, request json.Raw
 
 	ip.Reset()
 
-	return []plugin.MonitoringDataWrapper{plugin.WrapMonitoringData(data, "Invocation")}
+	return []plugin.MonitoringDataWrapper{plugin.WrapMonitoringData(data, "Invocation")}, ctx
 }
 
 func (ip *invocationPlugin) Reset() {
 	ClearTags()
+	clearTraceLinks()
 }
 
 // isColdStarted returns if the lambda instance is cold started. Cold Start only happens on the first invocationPlugin.

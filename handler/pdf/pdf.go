@@ -2,10 +2,15 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/pulpfree/univsales-pdf/config"
+	"github.com/pulpfree/univsales-pdf/model"
+	"github.com/pulpfree/univsales-pdf/model/mongo"
+	"github.com/pulpfree/univsales-pdf/pdf"
 	"github.com/thundra-io/thundra-lambda-agent-go/thundra"
 
 	log "github.com/sirupsen/logrus"
@@ -20,15 +25,22 @@ type Response struct {
 	Timestamp int64       `json:"timestamp"` // Machine-readable UTC timestamp in nanoseconds since EPOCH
 }
 
+var cfg *config.Config
+
+func init() {
+	cfg = &config.Config{}
+	err := cfg.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 // HandleRequest function
 func HandleRequest(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-
-	// var err error
 
 	hdrs := make(map[string]string)
 	hdrs["Content-Type"] = "application/json"
 	t := time.Now()
-	log.Errorf("req with log: %+v\n", req.Body)
 
 	// If this is a ping test, intercept and return
 	if req.HTTPMethod == "GET" {
@@ -41,9 +53,60 @@ func HandleRequest(req events.APIGatewayProxyRequest) (events.APIGatewayProxyRes
 		}, hdrs), nil
 	}
 
+	var r *pdf.Request
+	json.Unmarshal([]byte(req.Body), &r)
+
+	db, err := mongo.NewDB(cfg.GetMongoConnectURL(), cfg.DBName)
+	if err != nil {
+		return gatewayResponse(Response{
+			Code:      500,
+			Message:   fmt.Sprintf("error: %s", err.Error()),
+			Status:    "error",
+			Timestamp: t.Unix(),
+		}, hdrs), nil
+	}
+
+	var q *model.Quote
+	q, err = db.FetchQuote(r.QuoteID)
+	if err != nil {
+		return gatewayResponse(Response{
+			Code:      500,
+			Message:   fmt.Sprintf("error: %s", err.Error()),
+			Status:    "error",
+			Timestamp: t.Unix(),
+		}, hdrs), nil
+	}
+
+	var p *pdf.PDF
+	p = pdf.New(r, q, cfg)
+	if r.DocType == "quote" {
+		err = p.Quote()
+	} else if r.DocType == "invoice" {
+		err = p.Invoice()
+	}
+	if err != nil {
+		return gatewayResponse(Response{
+			Code:      500,
+			Message:   fmt.Sprintf("error: %s", err.Error()),
+			Status:    "error",
+			Timestamp: t.Unix(),
+		}, hdrs), nil
+	}
+
+	location, err := p.SaveToS3()
+	if err != nil {
+		return gatewayResponse(Response{
+			Code:      500,
+			Message:   fmt.Sprintf("error: %s", err.Error()),
+			Status:    "error",
+			Timestamp: t.Unix(),
+		}, hdrs), nil
+	}
+	log.Infof("Successfully created PDF with location: %s", location)
+
 	return gatewayResponse(Response{
 		Code:      201,
-		Data:      "post data",
+		Data:      location,
 		Status:    "success",
 		Timestamp: t.Unix(),
 	}, hdrs), nil
@@ -53,14 +116,10 @@ func main() {
 	lambda.Start(thundra.Wrap(HandleRequest))
 }
 
-// Your first Thundra API key, use it freely: b41775a3-4be7-4bbc-8106-ef649370ad63
-
 func gatewayResponse(resp Response, hdrs map[string]string) events.APIGatewayProxyResponse {
-
 	body, _ := json.Marshal(&resp)
 	if resp.Status == "error" {
 		log.Errorf("Error: status: %s, code: %d, message: %s", resp.Status, resp.Code, resp.Message)
 	}
-
 	return events.APIGatewayProxyResponse{Body: string(body), Headers: hdrs, StatusCode: resp.Code}
 }

@@ -3,6 +3,7 @@ package trace
 import (
 	"context"
 	"encoding/json"
+	"sync"
 
 	"github.com/thundra-io/thundra-lambda-agent-go/config"
 
@@ -15,25 +16,28 @@ import (
 )
 
 type tracePlugin struct {
-	data     *traceData // Not opentracing data just to construct trace plugin data
-	rootSpan opentracing.Span
-	recorder tracer.SpanRecorder
+	Data     *Data // Not opentracing data just to construct trace plugin data
+	RootSpan opentracing.Span
+	Recorder tracer.SpanRecorder
 }
 
-// traceData collects information related to trace plugin per invocation.
-type traceData struct {
-	startTime          int64
-	finishTime         int64
-	duration           int64
-	errors             []string
-	thrownError        interface{}
-	thrownErrorMessage interface{}
-	panicInfo          *panicInfo
-	errorInfo          *errorInfo
-	timeout            bool
+// Data collects information related to trace plugin per invocation.
+type Data struct {
+	StartTime          int64
+	FinishTime         int64
+	Duration           int64
+	Errors             []string
+	ThrownError        interface{}
+	ThrownErrorMessage interface{}
+	PanicInfo          *panicInfo
+	ErrorInfo          *errorInfo
+	Timeout            bool
 }
 
 var invocationCount uint32
+
+var lock = &sync.Mutex{}
+var instance *tracePlugin
 
 // New returns a new trace object.
 func New() *tracePlugin {
@@ -42,8 +46,20 @@ func New() *tracePlugin {
 	opentracing.SetGlobalTracer(tracer)
 
 	return &tracePlugin{
-		recorder: recorder,
+		Recorder: recorder,
 	}
+}
+
+// GetInstance returns the tracePlugin instance existing or creates
+// a new instance and then returns it
+func GetInstance() *tracePlugin {
+	lock.Lock()
+	defer lock.Unlock()
+
+	if instance == nil {
+		instance = New()
+	}
+	return instance
 }
 
 func (tr *tracePlugin) IsEnabled() bool {
@@ -56,43 +72,59 @@ func (tr *tracePlugin) Order() uint8 {
 
 // BeforeExecution executes the necessary tasks before the invocation
 func (tr *tracePlugin) BeforeExecution(ctx context.Context, request json.RawMessage) context.Context {
-	rootSpan, ctxWithRootSpan := opentracing.StartSpanFromContext(ctx, application.ApplicationName)
 	invocationCount++
 
-	tr.rootSpan = rootSpan
-	tr.data = &traceData{
-		startTime: utils.GetTimestamp(),
+	startTimeInMs, ctx := plugin.StartTimeFromContext(ctx)
+	startTime := utils.MsToTime(startTimeInMs)
+	rootSpan, ctx := opentracing.StartSpanFromContext(ctx, application.ApplicationName, opentracing.StartTime(startTime))
+	tr.RootSpan = rootSpan
+
+	tr.Data = &Data{
+		StartTime: startTimeInMs,
 	}
 
-	return ctxWithRootSpan
+	return ctx
 }
 
 // AfterExecution executes the necessary tasks after the invocation
-func (tr *tracePlugin) AfterExecution(ctx context.Context, request json.RawMessage, response interface{}, err interface{}) []plugin.MonitoringDataWrapper {
-	tr.rootSpan.Finish()
-	tr.data.finishTime = utils.GetTimestamp()
-	tr.data.duration = tr.data.finishTime - tr.data.startTime
+func (tr *tracePlugin) AfterExecution(ctx context.Context, request json.RawMessage, response interface{}, err interface{}) ([]plugin.MonitoringDataWrapper, context.Context) {
+	finishTime, ctx := plugin.EndTimeFromContext(ctx)
+	tr.Data.FinishTime = finishTime
+	tr.Data.Duration = tr.Data.FinishTime - tr.Data.StartTime
+	tr.RootSpan.FinishWithOptions(opentracing.FinishOptions{FinishTime: utils.MsToTime(finishTime)})
 
 	// Add root span data
-	rawRootSpan, ok := tracer.GetRaw(tr.rootSpan)
+	rawRootSpan, ok := tracer.GetRaw(tr.RootSpan)
 	if ok {
-		rawRootSpan.ClassName = "AWS-Lambda"
-		rawRootSpan.DomainName = "API"
+		rawRootSpan.ClassName = constants.AwsLambdaApplicationClass
+		rawRootSpan.DomainName = constants.AwsLambdaApplicationDomain
 	}
 
 	// Adding tags related to the root span
-	tr.rootSpan.SetTag(constants.AwsLambdaName, application.ApplicationName)
-	tr.rootSpan.SetTag(constants.AwsLambdaARN, application.GetInvokedFunctionArn(ctx))
-	tr.rootSpan.SetTag(constants.AwsRegion, application.FunctionRegion)
-	tr.rootSpan.SetTag(constants.AwsLambdaMemoryLimit, application.MemoryLimit)
-	tr.rootSpan.SetTag(constants.AwsLambdaLogGroupName, application.LogGroupName)
-	tr.rootSpan.SetTag(constants.AwsLambdaLogStreamName, application.LogStreamName)
-	tr.rootSpan.SetTag(constants.AwsLambdaInvocationColdStart, invocationCount == 1)
-	tr.rootSpan.SetTag(constants.AwsLambdaInvocationTimeout, utils.IsTimeout(err))
-	tr.rootSpan.SetTag(constants.AwsLambdaInvocationRequestId, application.GetAwsRequestID(ctx))
-	tr.rootSpan.SetTag(constants.AwsLambdaInvocationRequest, request)
+	tr.RootSpan.SetTag(constants.AwsLambdaName, application.ApplicationName)
+	tr.RootSpan.SetTag(constants.AwsLambdaARN, application.GetInvokedFunctionArn(ctx))
+	tr.RootSpan.SetTag(constants.AwsRegion, application.FunctionRegion)
+	tr.RootSpan.SetTag(constants.AwsLambdaMemoryLimit, application.MemoryLimit)
+	tr.RootSpan.SetTag(constants.AwsLambdaLogGroupName, application.LogGroupName)
+	tr.RootSpan.SetTag(constants.AwsLambdaLogStreamName, application.LogStreamName)
+	tr.RootSpan.SetTag(constants.AwsLambdaInvocationColdStart, invocationCount == 1)
+	tr.RootSpan.SetTag(constants.AwsLambdaInvocationTimeout, utils.IsTimeout(err))
+	tr.RootSpan.SetTag(constants.AwsLambdaInvocationRequestId, application.GetAwsRequestID(ctx))
+
+	// Disable request data sending for cloudwatchlog, firehose and kinesis if not
+	// enabled by configuration because requests can get too big for these
+	enableRequestData := true
+	if (plugin.TriggerClassName == constants.ClassNames["KINESIS"] && !config.TraceKinesisRequestEnabled) ||
+		(plugin.TriggerClassName == constants.ClassNames["FIREHOSE"] && !config.TraceFirehoseRequestEnabled) ||
+		(plugin.TriggerClassName == constants.ClassNames["CLOUDWATCHLOG"] && !config.TraceCloudwatchlogRequestEnabled) {
+		enableRequestData = false
+	}
+	if enableRequestData {
+		tr.RootSpan.SetTag(constants.AwsLambdaInvocationRequest, request)
+	}
+
 	// TODO: Serialize response properly
-	tr.rootSpan.SetTag(constants.AwsLambdaInvocationResponse, response)
+	tr.RootSpan.SetTag(constants.AwsLambdaInvocationResponse, response)
 
 	if err != nil {
 		errMessage := utils.GetErrorMessage(err)
@@ -103,24 +135,26 @@ func (tr *tracePlugin) AfterExecution(ctx context.Context, request json.RawMessa
 		}
 
 		// Add error related tags to the root span
-		tr.rootSpan.SetTag(constants.AwsError, true)
-		tr.rootSpan.SetTag(constants.AwsErrorKind, errType)
-		tr.rootSpan.SetTag(constants.AwsErrorMessage, errMessage)
+		tr.RootSpan.SetTag(constants.AwsError, true)
+		tr.RootSpan.SetTag(constants.AwsErrorKind, errType)
+		tr.RootSpan.SetTag(constants.AwsErrorMessage, errMessage)
 
-		tr.data.errorInfo = ei
-		tr.data.thrownError = errType
-		tr.data.thrownErrorMessage = errMessage
-		tr.data.errors = append(tr.data.errors, errType)
+		utils.SetSpanError(tr.RootSpan, err)
+
+		tr.Data.ErrorInfo = ei
+		tr.Data.ThrownError = errType
+		tr.Data.ThrownErrorMessage = errMessage
+		tr.Data.Errors = append(tr.Data.Errors, errType)
 	}
 
-	tr.data.timeout = utils.IsTimeout(err)
+	tr.Data.Timeout = utils.IsTimeout(err)
 
 	// Prepare report data
 	var traceArr []plugin.MonitoringDataWrapper
 	td := tr.prepareTraceDataModel(ctx, request, response)
 	traceArr = append(traceArr, plugin.WrapMonitoringData(td, traceType))
 
-	spanList := tr.recorder.GetSpans()
+	spanList := tr.Recorder.GetSpans()
 	for _, s := range spanList {
 		sd := tr.prepareSpanDataModel(ctx, s)
 		traceArr = append(traceArr, plugin.WrapMonitoringData(sd, spanType))
@@ -129,10 +163,10 @@ func (tr *tracePlugin) AfterExecution(ctx context.Context, request json.RawMessa
 	// Clear trace plugin data for next invocation
 	tr.Reset()
 
-	return traceArr
+	return traceArr, ctx
 }
 
 // Reset clears the recorded data for the next invocation
 func (tr *tracePlugin) Reset() {
-	tr.recorder.Reset()
+	tr.Recorder.Reset()
 }

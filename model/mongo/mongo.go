@@ -1,11 +1,16 @@
 package mongo
 
 import (
+	"context"
 	"errors"
+	"fmt"
 
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
 	"github.com/pulpfree/univsales-pdf/model"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -25,43 +30,46 @@ const (
 	Users         = "users"
 )
 
-// DB struct
-type DB struct {
-	session *mgo.Session
-	dbName  string
+// MDB struct
+type MDB struct {
+	client *mongo.Client
+	dbName string
+	db     *mongo.Database
 }
 
-// NewDB sets up new MongoDB struct
+// NewDB sets up new MDB struct
 func NewDB(connection string, dbNm string) (model.DBHandler, error) {
 
-	/* client, err := mongo.Connect(context.TODO(), "mongodb://localhost:27017")
-
+	clientOptions := options.Client().ApplyURI(connection)
+	err := clientOptions.Validate()
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// Connect to MongoDB
+	client, err := mongo.Connect(context.Background(), clientOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
 	// Check the connection
-	err = client.Ping(context.TODO(), nil)
-
+	err = client.Ping(context.Background(), nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Connected to MongoDB!") */
+	log.Println("Connected to MongoDB!")
 
-	s, err := mgo.Dial(connection)
-	if err != nil {
-		return nil, err
-	}
+	// defer suite.db.Close()
 
-	return &DB{
-		session: s,
-		dbName:  dbNm,
+	return &MDB{
+		client: client,
+		dbName: dbNm,
+		db:     client.Database(dbNm),
 	}, err
 }
 
 // FetchQuote method
-func (db *DB) FetchQuote(quoteID string) (*model.Quote, error) {
+func (db *MDB) FetchQuote(quoteID string) (*model.Quote, error) {
 
 	// Initialize
 	q := &model.Quote{}
@@ -73,7 +81,7 @@ func (db *DB) FetchQuote(quoteID string) (*model.Quote, error) {
 	}
 
 	// Fetch payments
-	/*err = db.getPayments(q)
+	err = db.getPayments(q)
 	if err != nil {
 		return q, err
 	}
@@ -107,88 +115,95 @@ func (db *DB) FetchQuote(quoteID string) (*model.Quote, error) {
 	if err != nil {
 		return q, err
 	}
-	*/
+
 	return q, nil
 }
 
-func (db *DB) getQuote(q *model.Quote, quoteID string) error {
+func (db *MDB) getQuote(q *model.Quote, quoteID string) error {
 
 	if quoteID == "" {
 		return errors.New("Missing quoteID string")
 	}
-	s := db.getFreshSession()
-	defer s.Close()
 
-	col := s.DB(db.dbName).C(colQuotes)
-	err := col.FindId(bson.ObjectIdHex(quoteID)).One(&q)
+	col := db.db.Collection(colQuotes)
+	objectIDS, err := primitive.ObjectIDFromHex(quoteID)
+	// filter := bson.D{{"_id", objectIDS}}
+	// found answer to go-vet issue in above filter here: https://stackoverflow.com/questions/54548441/composite-literal-uses-unkeyed-fields#answer-54548495
+	filter := bson.D{primitive.E{Key: "_id", Value: objectIDS}}
+	err = col.FindOne(context.Background(), filter).Decode(&q)
 	if err != nil {
+		log.Fatalf("quote table error: %s - quoteID: %s", err, quoteID)
 		return err
 	}
 
 	return nil
 }
 
-func (db *DB) getPayments(q *model.Quote) error {
-
-	s := db.getFreshSession()
-	defer s.Close()
+func (db *MDB) getPayments(q *model.Quote) error {
 
 	q.Payments = []*model.Payment{}
-	col := s.DB(db.dbName).C(colPayments)
-	err := col.Find(bson.M{"quoteID": q.ID}).All(&q.Payments)
+	findOptions := options.Find()
+
+	col := db.db.Collection(colPayments)
+	filter := bson.D{primitive.E{Key: "quoteID", Value: q.ID}}
+	cur, err := col.Find(context.Background(), filter, findOptions)
+	defer cur.Close(context.Background())
 	if err != nil {
 		return err
+	}
+
+	for cur.Next(context.Background()) {
+		var elem model.Payment
+		err := cur.Decode(&elem)
+		if err != nil {
+			log.Fatal(err)
+			return err
+		}
+		q.Payments = append(q.Payments, &elem)
 	}
 
 	return nil
 }
 
-func (db *DB) getGroupItems(q *model.Quote) error {
+func (db *MDB) getGroupItems(q *model.Quote) error {
 
-	s := db.getFreshSession()
-	defer s.Close()
-
+	// fixme: this should be in FetchQuote
 	q.Items = &model.Items{}
-	col := s.DB(db.dbName).C(colJSGroups)
+
+	col := db.db.Collection(colJSGroups)
 	for _, i := range q.ItemIds.Group {
 		item := &model.Group{}
-		if false == bson.IsObjectIdHex(i) {
-			log.WithFields(log.Fields{"groupID": i}).Fatal("Invalid groupID")
+		// these IDs were stored as strings, so now need to convert
+		objectIDS, err := primitive.ObjectIDFromHex(i)
+		if err != nil {
 			return errors.New("Invalid groupID")
 		}
-		if err := col.FindId(bson.ObjectIdHex(i)).One(&item); err != nil {
+
+		filter := bson.D{primitive.E{Key: "_id", Value: objectIDS}}
+		if err := col.FindOne(context.Background(), filter).Decode(&item); err != nil {
 			log.Fatalf("Group not found. Error: %s", err)
 			return err
 		}
-		// Fetch group type
-		colGT := s.DB(db.dbName).C(colGroupTypes)
-		ret := bson.M{}
-		if err := colGT.FindId(item.Specs["groupType"]).One(&ret); err != nil {
-			log.Fatalf("Group Type not found. Error: %s", err)
-			return err
-		}
-		// Set group type name
-		item.Specs["groupTypeName"] = ret["name"]
+
 		q.Items.Group = append(q.Items.Group, item)
 	}
 
 	return nil
 }
 
-func (db *DB) getWindowItems(q *model.Quote) error {
+func (db *MDB) getWindowItems(q *model.Quote) error {
 
-	s := db.getFreshSession()
-	defer s.Close()
-
-	col := s.DB(db.dbName).C(colJSWindows)
+	col := db.db.Collection(colJSWindows)
 	for _, i := range q.ItemIds.Window {
 		item := &model.Window{}
-		if false == bson.IsObjectIdHex(i) {
-			log.WithFields(log.Fields{"windowID": i}).Fatal("Invalid windowID")
+		objectIDS, err := primitive.ObjectIDFromHex(i)
+		if err != nil {
 			return errors.New("Invalid windowID")
 		}
-		if err := col.FindId(bson.ObjectIdHex(i)).One(&item); err != nil {
-			log.Fatalf("Window not found. Error: %s", err)
+
+		filter := bson.D{primitive.E{Key: "_id", Value: objectIDS}}
+		if err := col.FindOne(context.Background(), filter).Decode(&item); err != nil {
+			log.Fatalf("Window error for id: %s. Error: %s", i, err)
 			return err
 		}
 		// fetch product info
@@ -203,19 +218,18 @@ func (db *DB) getWindowItems(q *model.Quote) error {
 	return nil
 }
 
-/* func (db *DB) getOtherItems(q *model.Quote) error {
+func (db *MDB) getOtherItems(q *model.Quote) error {
 
-	s := db.getFreshSession()
-	defer s.Close()
-
-	col := s.DB(db.dbName).C(colJobsheetOther)
+	col := db.db.Collection(colJSOther)
 	for _, i := range q.ItemIds.Other {
 		item := &model.Other{}
-		if false == bson.IsObjectIdHex(i) {
-			log.WithFields(log.Fields{"windowID": i}).Fatal("Invalid windowID")
-			return errors.New("Invalid windowID")
+		objectIDS, err := primitive.ObjectIDFromHex(i)
+		if err != nil {
+			return errors.New("Invalid otherID")
 		}
-		if err := col.FindId(bson.ObjectIdHex(i)).One(&item); err != nil {
+
+		filter := bson.D{primitive.E{Key: "_id", Value: objectIDS}}
+		if err := col.FindOne(context.Background(), filter).Decode(&item); err != nil {
 			log.Fatalf("Other not found. Error: %s", err)
 			return err
 		}
@@ -223,28 +237,24 @@ func (db *DB) getWindowItems(q *model.Quote) error {
 	}
 
 	return nil
-} */
+}
 
-func (db *DB) getProductName(productID bson.ObjectId) (*model.Product, error) {
+func (db *MDB) getProductName(productID primitive.ObjectID) (*model.Product, error) {
 
-	s := db.getFreshSession()
-	defer s.Close()
-
-	col := s.DB(db.dbName).C(colProducts)
+	col := db.db.Collection(colProducts)
 	p := &model.Product{}
-	if err := col.FindId(productID).One(&p); err != nil {
+	filter := bson.D{primitive.E{Key: "_id", Value: productID}}
+	if err := col.FindOne(context.Background(), filter).Decode(&p); err != nil {
 		return p, err
 	}
 	return p, nil
 }
 
-/* func (db *DB) getCustomer(q *model.Quote) error {
+func (db *MDB) getCustomer(q *model.Quote) error {
 
-	s := db.getFreshSession()
-	defer s.Close()
-
-	col := s.DB(db.dbName).C(colCustomer)
-	err := col.FindId(q.CustomerID).One(&q.Customer)
+	col := db.db.Collection(colCustomer)
+	filter := bson.D{primitive.E{Key: "_id", Value: q.CustomerID}}
+	err := col.FindOne(context.Background(), filter).Decode(&q.Customer)
 	if err != nil {
 		return err
 	}
@@ -254,39 +264,49 @@ func (db *DB) getProductName(productID bson.ObjectId) (*model.Product, error) {
 	}
 	q.Customer.PhoneMap = phoneMap
 
-	// Fetch customer address data
-	col = s.DB(dbName).C(colAddress)
-	err = col.Find(bson.M{"customerID": q.CustomerID, "associate": "customer"}).One(&q.Customer.Address)
+	// // Fetch customer address data
+	col = db.db.Collection(colAddress)
+	adFilter := bson.D{primitive.E{Key: "customerID", Value: q.CustomerID}, primitive.E{Key: "associate", Value: "customer"}}
+	err = col.FindOne(context.Background(), adFilter).Decode(&q.Customer.Address)
 	if err != nil {
 		return err
 	}
 
 	return nil
-} */
+}
 
-/* func (db *DB) getJobsheetFeatures(q *model.Quote) error {
+func (db *MDB) getJobsheetFeatures(q *model.Quote) error {
 
-	s := db.getFreshSession()
-	defer s.Close()
+	col := db.db.Collection(colJS)
+	jobSheet := &model.JobSheet{}
 
-	col := s.DB(dbName).C(colJobsheet)
-	jobsheet := map[string]string{}
-	if err := col.FindId(q.JobsheetID).One(&jobsheet); err != nil {
-		log.Fatalf("Jobsheet not found. Error: %s", err)
+	// see: https://stackoverflow.com/questions/53120116/how-to-filter-fields-from-a-mongo-document-with-the-official-mongo-go-driver
+	/* projection := model.JobSheet{
+		// ID: nil,
+		Features: nil,
+	} */
+
+	filter := bson.D{primitive.E{Key: "_id", Value: q.JobsheetID}}
+	if err := col.FindOne(context.Background(), filter).Decode(&jobSheet); err != nil {
+		log.Fatalf("Jobsheet query error: %s", err)
 		return err
 	}
-	q.Features = jobsheet["features"]
+	q.Features = jobSheet.Features
 
 	return nil
-} */
+}
 
 // Close method
-func (db *DB) Close() {
-	db.session.Close()
+func (db *MDB) Close() {
+	err := db.client.Disconnect(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Connection to MongoDB closed.")
 }
 
 // ============================== Helper methods ==============================
 
-func (db *DB) getFreshSession() *mgo.Session {
+/* func (db *DB) getFreshSession() *mgo.Session {
 	return db.session.Copy()
-}
+} */

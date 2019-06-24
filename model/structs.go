@@ -3,38 +3,39 @@ package model
 import (
 	"time"
 
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Quote struct
 type Quote struct {
 	CreatedAt  time.Time `bson:"createdAt" json:"createdAt"`
 	Customer   *Customer
-	CustomerID bson.ObjectId `bson:"customerID" json:"customerID"`
-	Discount   *Discount     `bson:"discount" json:"discount"`
-	Features   string        `bson:"features" bson:"features"`
-	ID         bson.ObjectId `bson:"_id" json:"id"`
-	Invoiced   bool          `bson:"invoiced" bson:"invoiced"`
-	ItemCosts  *ItemCosts    `bson:"itemCosts" json:"itemCosts"`
-	ItemIds    *ItemIds      `bson:"items"`
-	Items      *Items        `bson:"is"`
-	JobsheetID bson.ObjectId `bson:"jobsheetID" json:"jobsheetID"`
-	Number     int           `bson:"number" json:"number"`
-	Payments   []*Payment    `json:"payments"`
-	Price      *Price        `bson:"quotePrice" bson:"quotePrice"`
-	Revision   int           `bson:"version" bson:"version"`
-	UpdatedAt  time.Time     `bson:"updatedAt" json:"updatedAt"`
+	CustomerID primitive.ObjectID `bson:"customerID" json:"customerID"`
+	Discount   *Discount          `bson:"discount" json:"discount,omitempty"`
+	Features   string             `json:"features,omitempty"`
+	ID         primitive.ObjectID `bson:"_id" json:"id"`
+	Invoiced   bool               `bson:"invoiced" bson:"invoiced"`
+	ItemCosts  *ItemCosts         `bson:"itemCosts" json:"itemCosts"`
+	ItemIds    *ItemIds           `bson:"items"`
+	Items      *Items             `bson:"is"`
+	JobsheetID primitive.ObjectID `bson:"jobsheetID" json:"jobsheetID"`
+	Number     int                `bson:"number" json:"number"`
+	Payments   []*Payment         `json:"payments"`
+	Price      *Price             `bson:"quotePrice" bson:"quotePrice"`
+	Revision   int                `bson:"version" bson:"version"`
+	UpdatedAt  time.Time          `bson:"updatedAt" json:"updatedAt"`
 }
 
 // Address struct
 type Address struct {
-	Associate  string        `bson:"associate" json:"associate"`
-	City       string        `bson:"city" json:"city"`
-	CustomerID bson.ObjectId `bson:"customerID" json:"customerID"`
-	PostalCode string        `bson:"postalCode" json:"postalCode"`
-	Province   string        `bson:"provinceCode" json:"province"`
-	Street1    string        `bson:"street1" json:"street1"`
-	Type       string        `bson:"type" json:"type"`
+	Associate  string             `bson:"associate" json:"associate"`
+	City       string             `bson:"city" json:"city"`
+	CustomerID primitive.ObjectID `bson:"customerID" json:"customerID"`
+	PostalCode string             `bson:"postalCode" json:"postalCode"`
+	Province   string             `bson:"provinceCode" json:"province"`
+	Street1    string             `bson:"street1" json:"street1"`
+	Type       string             `bson:"type" json:"type"`
 }
 
 // Customer struct
@@ -43,7 +44,7 @@ type Customer struct {
 	Name  struct {
 		First  string `bson:"first" json:"first"`
 		Last   string `bson:"last" json:"last"`
-		Spouse string `bson:"spouse" json:"spouse"`
+		Spouse string `bson:"spouse" json:"spouse,omitempty"`
 	}
 	Phones   []*Phone
 	Address  *Address
@@ -53,7 +54,7 @@ type Customer struct {
 // Dim struct
 type Dim struct {
 	Decimal  float64 `bson:"decimal" json:"decimal"`
-	Fraction string  `bson:"fraction" json:"fraction"`
+	Fraction string  `bson:"fraction,omitempty" json:"fraction"`
 	Inch     int     `bson:"inch" json:"inch"`
 }
 
@@ -65,10 +66,10 @@ type Dims struct {
 
 // Discount struct
 type Discount struct {
-	Description string  `bson:"description" json:"description"`
-	Discount    float64 `bson:"discount" json:"discount"`
-	Subtotal    float64 `bson:"subtotal" json:"subtotal"`
-	Total       float64 `bson:"total" json:"total"`
+	Description string  `bson:"description" json:"description,omitempty"`
+	Discount    float64 `bson:"discount" json:"discount,omitempty"`
+	Subtotal    float64 `bson:"subtotal" json:"subtotal,omitempty"`
+	Total       float64 `bson:"total" json:"total,omitempty"`
 }
 
 // Group struct
@@ -129,6 +130,12 @@ type Items struct {
 	Window []*Window
 }
 
+// JobSheet struct
+type JobSheet struct {
+	ID       primitive.ObjectID `bson:"_id" json:"id"`
+	Features string             `bson:"features" json:"features,omitempty"`
+}
+
 // Other struct
 type Other struct {
 	Costs       *ItemCost `bson:"costs" json:"costs"`
@@ -137,7 +144,7 @@ type Other struct {
 	Rooms       []string  `bson:"rooms" json:"rooms"`
 	Specs       struct {
 		Options  string `bson:"options" json:"options"`
-		Location string `bson:"location" json:"location"`
+		Location string `bson:"location" json:"location,omitempty"`
 	}
 }
 
@@ -174,10 +181,10 @@ type Product struct {
 
 // Window struct
 type Window struct {
-	Costs       *WindowCosts  `bson:"costs" json:"costs"`
-	Dims        *Dims         `bson:"dims" json:"dims"`
-	Qty         int           `bson:"qty" json:"qty"`
-	ProductID   bson.ObjectId `bson:"productID" json:"productID"`
+	Costs       *WindowCosts       `bson:"costs" json:"costs"`
+	Dims        *Dims              `bson:"dims" json:"dims"`
+	Qty         int                `bson:"qty" json:"qty"`
+	ProductID   primitive.ObjectID `bson:"productID" json:"productID"`
 	ProductName string
 	Rooms       []string `bson:"rooms" json:"rooms"`
 	Specs       bson.M   `bson:"specs" json:"specs"`
@@ -191,5 +198,6 @@ type WindowCosts struct {
 	InstallType float64 `bson:"installType" json:"installType"`
 	Install     float64 `bson:"install" json:"install"`
 	Unit        float64 `bson:"extendUnit" json:"extendUnit"`
+	NetUnit     float64 `bson:"netUnit" json:"netUnit"`
 	Total       float64 `bson:"extendTotal" json:"extendTotal"`
 }

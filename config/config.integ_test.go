@@ -2,7 +2,6 @@ package config
 
 import (
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -26,7 +25,7 @@ func (suite *IntegSuite) SetupTest() {
 
 // TestSetSSMParams function
 // this test assumes that the S3Bucket is set
-func (suite *IntegSuite) TestSetSSMParams() {
+/* func (suite *IntegSuite) TestSetSSMParams() {
 
 	DBNameBefore := defs.DBName
 	err := suite.c.setSSMParams()
@@ -34,18 +33,35 @@ func (suite *IntegSuite) TestSetSSMParams() {
 
 	DBNameAfter := defs.DBName
 	suite.True(strings.Compare(DBNameBefore, DBNameAfter) != 0)
-}
+} */
 
 // TestLoad function
-func (suite *IntegSuite) TestLoad() {
+/* func (suite *IntegSuite) TestLoad() {
 
 	suite.Empty(suite.c.AWSRegion)
 
-	// cfg, err := Load()
+	err := suite.c.Load()
+	suite.NoError(err)
+	suite.NotEmpty(suite.c.AWSRegion)
+} */
+
+// TestLoadProduction
+func (suite *IntegSuite) TestLoadProduction() {
+
+	os.Setenv("Stage", "prod")
+
 	err := suite.c.Load()
 	suite.NoError(err)
 	suite.NotEmpty(suite.c.AWSRegion)
 }
+
+/* func (suite *IntegSuite) TestSetStageEnv() {
+	envBefore := suite.c.GetStageEnv()
+	suite.True(envBefore == suite.c.GetStageEnv())
+	suite.c.SetStageEnv(string(ProdEnv))
+	envAfter := suite.c.GetStageEnv()
+	suite.True(envAfter == ProdEnv)
+} */
 
 // TestIntegrationSuite function
 func TestIntegrationSuite(t *testing.T) {

@@ -2,7 +2,8 @@ package tracer
 
 import (
 	"strings"
-	"time"
+
+	"github.com/thundra-io/thundra-lambda-agent-go/utils"
 
 	"github.com/thundra-io/thundra-lambda-agent-go/ext"
 
@@ -28,7 +29,7 @@ func (s *RawSpan) Duration() int64 {
 		return s.EndTimestamp - s.StartTimestamp
 	}
 
-	return time.Now().Unix() - s.StartTimestamp
+	return utils.GetTimestamp() - s.StartTimestamp
 }
 
 // GetTags filters the thundra tags and returns the remainings
@@ -42,4 +43,9 @@ func (s *RawSpan) GetTags() ot.Tags {
 	}
 
 	return ft
+}
+
+// GetTag returns the value for key
+func (s *RawSpan) GetTag(key string) interface{} {
+	return s.Tags[key]
 }

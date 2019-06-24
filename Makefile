@@ -1,6 +1,6 @@
 include .env
 
-deploy: build awspackage awsdeploy
+default: build awspackage awsdeploy
 
 clean:
 	@rm -rf dist

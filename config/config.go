@@ -74,6 +74,13 @@ func (c *Config) GetStageEnv() StageEnvironment {
 	return c.Stage
 }
 
+// SetStageEnv method
+func (c *Config) SetStageEnv(env string) error {
+	defs.Stage = env
+	err := c.validateStage()
+	return err
+}
+
 // GetMongoConnectURL method
 func (c *Config) GetMongoConnectURL() string {
 	return c.DBConnectURL
@@ -194,11 +201,7 @@ func (c *Config) setSSMParams() (err error) {
 // Build a url used in mgo.Dial as described in: https://godoc.org/gopkg.in/mgo.v2#Dial
 func (c *Config) setDBConnectURL() *Config {
 
-	var db, userPass, authSource string
-
-	if defs.DBName != "" {
-		db = "/" + defs.DBName
-	}
+	var userPass, authSource string
 
 	if defs.DBUser != "" && defs.DBPassword != "" {
 		userPass = defs.DBUser + ":" + defs.DBPassword + "@"
@@ -207,8 +210,10 @@ func (c *Config) setDBConnectURL() *Config {
 	if userPass != "" {
 		authSource = "?authSource=admin"
 	}
+	// fmt.Printf("defs.Stage %s\n", defs.Stage)
 
-	c.DBConnectURL = "mongodb://" + userPass + defs.DBHost + db + authSource
+	// c.DBConnectURL = "mongodb://" + userPass + defs.DBHost + "/" + defs.DBName + "/" + authSource
+	c.DBConnectURL = "mongodb://" + userPass + defs.DBHost + "/" + authSource
 
 	return c
 }
@@ -218,6 +223,10 @@ func (c *Config) setFinal() (err error) {
 
 	c.AWSRegion = defs.AWSRegion
 	c.DBName = defs.DBName
+	c.S3Bucket = defs.S3Bucket
+	c.DocAuthor = defs.DocAuthor
+	c.HSTNumber = defs.HSTNumber
+	c.LogoURI = defs.LogoURI
 	err = c.validateStage()
 
 	return err
