@@ -4,26 +4,30 @@ Transform: AWS::Serverless-2016-10-31
 Description: Universal Sales PDF
 
 Parameters:
-  IAMUsername:
-    Description: Username of the IAM user for this service
-    Type: String
-    Default: sysadmin
-  BucketName:
+  # IAMUsername:
+  #   Description: Username of the IAM user for this service
+  #   Type: String
+  #   Default: sysadmin
+  ParamBucketName:
     Description: Bucket that stores pdfs
     Type: String
-  ThundraKey:
+  ParamThundraKey:
     Description: thundra.io API key
     Type: String
-  KMSKeyID:
+  ParamKMSKeyID:
     Description: KMS key id
     Type: String
 
 Resources:
-
   RestApi:
     Type: AWS::Serverless::Api
-    DeletionPolicy: "Retain"
+    DeletionPolicy: Delete
     DependsOn: Lambda
+    # Not clear if this is actually changing this value and have been modifying in console
+    # EndpointConfiguration: REGIONAL
+    # EndpointConfiguration: 
+      # Types:
+        # - REGIONAL
     Properties:
       StageName: Prod
 
@@ -37,7 +41,7 @@ Resources:
       Environment:
         Variables:
           Stage: prod
-          thundra_apiKey: !Ref ThundraKey
+          thundra_apiKey: !Ref ParamThundraKey
           # thundra_agent_lambda_report_cloudwatch_enable: true
           # thundra_lambda_warmup_warmupAware: true
       Timeout: 20
@@ -133,7 +137,7 @@ Resources:
             - kms:Decrypt
             - kms:DescribeKey
             Resource:
-              Fn::Sub: arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${KMSKeyID}
+              Fn::Sub: arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${ParamKMSKeyID}
       - PolicyName: FunctionS3Access
         PolicyDocument:
           Version: '2012-10-17'
@@ -142,7 +146,7 @@ Resources:
             Action:
             - s3:*
             Resource: 
-              Fn::Sub: arn:aws:s3:::${BucketName}/*
+              Fn::Sub: arn:aws:s3:::${ParamBucketName}/*
 
 Outputs:
   ApiId:
