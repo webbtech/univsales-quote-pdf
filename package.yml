@@ -25,7 +25,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Runtime: go1.x
-      CodeUri: s3://ca-universalwindows/pdf-lambda/09209a5068c534e7a66942e49808e468
+      CodeUri: s3://ca-universalwindows/pdf-lambda/5f2091b2e73612905d29fa916e224500
       Handler: /pdf
       Role:
         Fn::GetAtt:
