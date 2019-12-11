@@ -25,7 +25,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Runtime: go1.x
-      CodeUri: s3://ca-universalwindows/pdf-lambda/5f2091b2e73612905d29fa916e224500
+      CodeUri: s3://ca-universalwindows/pdf-lambda/38da0deb51a9e98d5381955d98c34d3c
       Handler: /pdf
       Role:
         Fn::GetAtt:
@@ -36,8 +36,7 @@ Resources:
           Stage: prod
           thundra_apiKey:
             Ref: ThundraKey
-          thundra_agent_lambda_report_cloudwatch_enable: true
-          thundra_lambda_warmup_warmupAware: true
+          thundra_agent_lambda_report_cloudwatch_enable: false
       Timeout: 20
       VpcConfig:
         SecurityGroupIds:
