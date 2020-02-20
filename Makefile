@@ -39,7 +39,8 @@ awsdeploy:
 	--parameter-overrides \
 		ParamBucketName=$(AWS_BUCKET_NAME) \
 	 	ParamKMSKeyID=$(KMS_KEY_ID) \
-		ParamThundraKey=$(THUNDRA_API_KEY)
+		ParamThundraKey=$(THUNDRA_API_KEY) \
+		ParamAuthLambda=$(LAMBDA_AUTHORIZER_ARN)
 
 describe:
 	@aws cloudformation describe-stacks \

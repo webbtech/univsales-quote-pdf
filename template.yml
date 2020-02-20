@@ -4,10 +4,6 @@ Transform: AWS::Serverless-2016-10-31
 Description: Universal Sales PDF
 
 Parameters:
-  # IAMUsername:
-  #   Description: Username of the IAM user for this service
-  #   Type: String
-  #   Default: sysadmin
   ParamBucketName:
     Description: Bucket that stores pdfs
     Type: String
@@ -17,6 +13,9 @@ Parameters:
   ParamKMSKeyID:
     Description: KMS key id
     Type: String
+  ParamAuthLambda:
+    Type: String
+    Description: Lambda authorizer
 
 Resources:
   RestApi:
@@ -30,6 +29,13 @@ Resources:
         # - REGIONAL
     Properties:
       StageName: Prod
+      Auth:
+        DefaultAuthorizer: LambdaTokenAuthorizer
+        Authorizers:
+          LambdaTokenAuthorizer:
+            FunctionArn: !Sub "${ParamAuthLambda}"
+            # Identity:
+              # ReauthorizeEvery: 300
 
   Lambda:
     Type: AWS::Serverless::Function
@@ -44,6 +50,10 @@ Resources:
           thundra_apiKey: !Ref ParamThundraKey
           # thundra_agent_lambda_report_cloudwatch_enable: true
           # thundra_lambda_warmup_warmupAware: true
+          thundra_agent_lambda_report_cloudwatch_enable: false
+          # uncomment below once live
+          # thundra_lambda_warmup_warmupAware: true
+          # thundra_agent_lambda_warmup_warmupAware: true
       Timeout: 20
       VpcConfig:
         SecurityGroupIds:
