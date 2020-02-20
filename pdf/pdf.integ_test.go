@@ -5,9 +5,9 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/pulpfree/univsales-pdf/config"
-	"github.com/pulpfree/univsales-pdf/model"
-	"github.com/pulpfree/univsales-pdf/model/mongo"
+	"github.com/pulpfree/univsales-quote-pdf/config"
+	"github.com/pulpfree/univsales-quote-pdf/model"
+	"github.com/pulpfree/univsales-quote-pdf/model/mongo"
 	"github.com/stretchr/testify/suite"
 )
 

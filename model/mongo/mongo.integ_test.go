@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/pulpfree/univsales-pdf/config"
-	"github.com/pulpfree/univsales-pdf/model"
+	"github.com/pulpfree/univsales-quote-pdf/config"
+	"github.com/pulpfree/univsales-quote-pdf/model"
 	"github.com/stretchr/testify/suite"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
