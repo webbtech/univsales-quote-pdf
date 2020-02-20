@@ -37,9 +37,10 @@ awsdeploy:
 	--profile $(AWS_PROFILE) \
 	--force-upload \
 	--parameter-overrides \
-	 	KMSKeyID=$(KMS_KEY_ID) \
-		BucketName=$(AWS_BUCKET_NAME) \
-		ThundraKey=$(THUNDRA_API_KEY)
+		ParamBucketName=$(AWS_BUCKET_NAME) \
+	 	ParamKMSKeyID=$(KMS_KEY_ID) \
+		ParamThundraKey=$(THUNDRA_API_KEY) \
+		ParamAuthLambda=$(LAMBDA_AUTHORIZER_ARN)
 
 describe:
 	@aws cloudformation describe-stacks \
