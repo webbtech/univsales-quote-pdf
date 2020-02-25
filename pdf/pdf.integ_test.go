@@ -22,17 +22,18 @@ type IntegSuite struct {
 
 const (
 	defaultsFP = "../config/defaults.yml"
-	quoteID    = "5cd16f18699e0300c7b10d30"
-	invoiceID  = "5cc7b5410765188d68d191ca"
+	quoteID    = "5e502a88b667f300070a0eb9"
+	// quoteID    = "5cd16f18699e0300c7b10d30"
+	invoiceID = "5cc7b5410765188d68d191ca"
 )
 
 // SetupTest method
 func (suite *IntegSuite) SetupTest() {
 
-	// req := &Request{
-	// 	QuoteID: quoteID,
-	// 	DocType: "quote",
-	// }
+	req := &Request{
+		QuoteID: quoteID,
+		DocType: "quote",
+	}
 	// setup config
 	os.Setenv("Stage", "test")
 	suite.cfg = &config.Config{DefaultsFilePath: defaultsFP}
@@ -42,11 +43,11 @@ func (suite *IntegSuite) SetupTest() {
 	suite.db, err = mongo.NewDB(suite.cfg.GetMongoConnectURL(), suite.cfg.DBName)
 	suite.NoError(err)
 
-	// suite.q, err = suite.db.FetchQuote(quoteID)
-	// suite.NoError(err)
+	suite.q, err = suite.db.FetchQuote(quoteID)
+	suite.NoError(err)
 
-	// suite.p = New(req, suite.q, suite.cfg)
-	// suite.NoError(err)
+	suite.p = New(req, suite.q, suite.cfg)
+	suite.NoError(err)
 }
 
 func (suite *IntegSuite) TestTypes() {

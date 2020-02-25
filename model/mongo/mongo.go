@@ -30,6 +30,8 @@ const (
 	Users         = "users"
 )
 
+var jobSheet *model.JobSheet
+
 // MDB struct
 type MDB struct {
 	client *mongo.Client
@@ -106,6 +108,12 @@ func (db *MDB) FetchQuote(quoteID string) (*model.Quote, error) {
 
 	// Fetch Jobsheet features
 	err = db.getJobsheetFeatures(q)
+	if err != nil {
+		return q, err
+	}
+
+	// Fetch Jobsheet address
+	err = db.getJobsheetAddress(q)
 	if err != nil {
 		return q, err
 	}
@@ -264,7 +272,7 @@ func (db *MDB) getCustomer(q *model.Quote) error {
 	}
 	q.Customer.PhoneMap = phoneMap
 
-	// // Fetch customer address data
+	// Fetch customer address data
 	col = db.db.Collection(colAddress)
 	adFilter := bson.D{primitive.E{Key: "customerID", Value: q.CustomerID}, primitive.E{Key: "associate", Value: "customer"}}
 	err = col.FindOne(context.Background(), adFilter).Decode(&q.Customer.Address)
@@ -278,7 +286,7 @@ func (db *MDB) getCustomer(q *model.Quote) error {
 func (db *MDB) getJobsheetFeatures(q *model.Quote) error {
 
 	col := db.db.Collection(colJS)
-	jobSheet := &model.JobSheet{}
+	jobSheet = &model.JobSheet{}
 
 	// see: https://stackoverflow.com/questions/53120116/how-to-filter-fields-from-a-mongo-document-with-the-official-mongo-go-driver
 	/* projection := model.JobSheet{
@@ -292,6 +300,22 @@ func (db *MDB) getJobsheetFeatures(q *model.Quote) error {
 		return err
 	}
 	q.Features = jobSheet.Features
+
+	return nil
+}
+
+func (db *MDB) getJobsheetAddress(q *model.Quote) error {
+
+	if jobSheet == nil {
+		return errors.New("Missing jobsheet address id in getJobsheetAddress")
+	}
+
+	col := db.db.Collection(colAddress)
+	adFilter := bson.D{primitive.E{Key: "_id", Value: jobSheet.AddressID}}
+	err := col.FindOne(context.Background(), adFilter).Decode(&q.JobSheetAddress)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

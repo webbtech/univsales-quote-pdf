@@ -9,22 +9,23 @@ import (
 
 // Quote struct
 type Quote struct {
-	CreatedAt  time.Time `bson:"createdAt" json:"createdAt"`
-	Customer   *Customer
-	CustomerID primitive.ObjectID `bson:"customerID" json:"customerID"`
-	Discount   *Discount          `bson:"discount" json:"discount,omitempty"`
-	Features   string             `json:"features,omitempty"`
-	ID         primitive.ObjectID `bson:"_id" json:"id"`
-	Invoiced   bool               `bson:"invoiced" bson:"invoiced"`
-	ItemCosts  *ItemCosts         `bson:"itemCosts" json:"itemCosts"`
-	ItemIds    *ItemIds           `bson:"items"`
-	Items      *Items             `bson:"is"`
-	JobsheetID primitive.ObjectID `bson:"jobsheetID" json:"jobsheetID"`
-	Number     int                `bson:"number" json:"number"`
-	Payments   []*Payment         `json:"payments"`
-	Price      *Price             `bson:"quotePrice" bson:"quotePrice"`
-	Revision   int                `bson:"version" bson:"version"`
-	UpdatedAt  time.Time          `bson:"updatedAt" json:"updatedAt"`
+	CreatedAt       time.Time `bson:"createdAt" json:"createdAt"`
+	Customer        *Customer
+	CustomerID      primitive.ObjectID `bson:"customerID" json:"customerID"`
+	Discount        *Discount          `bson:"discount" json:"discount,omitempty"`
+	Features        string             `json:"features,omitempty"`
+	ID              primitive.ObjectID `bson:"_id" json:"id"`
+	Invoiced        bool               `bson:"invoiced" bson:"invoiced"`
+	ItemCosts       *ItemCosts         `bson:"itemCosts" json:"itemCosts"`
+	ItemIds         *ItemIds           `bson:"items"`
+	Items           *Items             `bson:"is"`
+	JobSheetAddress *Address
+	JobsheetID      primitive.ObjectID `bson:"jobsheetID" json:"jobsheetID"`
+	Number          int                `bson:"number" json:"number"`
+	Payments        []*Payment         `json:"payments"`
+	Price           *Price             `bson:"quotePrice" bson:"quotePrice"`
+	Revision        int                `bson:"version" bson:"version"`
+	UpdatedAt       time.Time          `bson:"updatedAt" json:"updatedAt"`
 }
 
 // Address struct
@@ -132,8 +133,9 @@ type Items struct {
 
 // JobSheet struct
 type JobSheet struct {
-	ID       primitive.ObjectID `bson:"_id" json:"id"`
-	Features string             `bson:"features" json:"features,omitempty"`
+	ID        primitive.ObjectID `bson:"_id" json:"id"`
+	AddressID primitive.ObjectID `bson:"addressID"`
+	Features  string             `bson:"features" json:"features,omitempty"`
 }
 
 // Other struct

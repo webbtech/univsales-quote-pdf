@@ -40,8 +40,8 @@ Resources:
           LambdaTokenAuthorizer:
             FunctionArn: !GetAtt AuthLambda.Arn
             Identity:
-              # ReauthorizeEvery: 300
-              ReauthorizeEvery: 1
+              ReauthorizeEvery: 300
+              # ReauthorizeEvery: 1
     
       # Documentation for below: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#gateway-response-object
       GatewayResponses:
@@ -55,7 +55,7 @@ Resources:
               Access-Control-Allow-Origin: "'*'"
               Access-Control-Allow-Headers: "'*'"
 
-       # Docs for this at: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#domain-configuration-object
+      # Docs for this at: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#domain-configuration-object
       Domain:
         DomainName: !Ref ParamCustomDomainName
         CertificateArn: !Ref ParamCertificateArn

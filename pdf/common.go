@@ -21,7 +21,10 @@ const (
 // productHdr method
 func (p *PDF) productHdr() {
 	pdf := p.pdf
-	pdf.MoveTo(9, 98)
+	pdf.SetDrawColor(0, 0, 0)
+	pdf.Line(9, 108, 205, 108)
+
+	pdf.MoveTo(9, 112)
 	pdf.SetFont("Arial", "B", 11)
 	pdf.CellFormat(9, 6, "Qty", "", 0, "", false, 0, "")
 	pdf.CellFormat(23, 6, "Rms", "", 0, "", false, 0, "")
@@ -29,8 +32,7 @@ func (p *PDF) productHdr() {
 	pdf.CellFormat(82, 6, "Options", "", 0, "", false, 0, "")
 	pdf.CellFormat(23, 6, "Each", "", 0, "", false, 0, "")
 	pdf.CellFormat(20, 6, "Total", "", 0, "", false, 0, "")
-	pdf.SetDrawColor(0, 0, 0)
-	pdf.Line(9, 105, 205, 105)
+
 	pdf.Ln(7)
 }
 

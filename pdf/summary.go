@@ -37,6 +37,11 @@ func (p *PDF) quoteSummary() {
 		pdf.SetFont("Arial", "", 12)
 		pdf.CellFormat(0, 6, fmt.Sprintf("%s", q.Discount.Description), "", 1, "", false, 0, "")
 	}
+
+	// Payment methods
+	pdf.Ln(4)
+	pdf.SetFont("Arial", "B", 12)
+	pdf.CellFormat(40, 6, "Payment Methods: Cash, Cheque, or eTransfer", "", 0, "", false, 0, "")
 }
 
 // invoiceSummary method
