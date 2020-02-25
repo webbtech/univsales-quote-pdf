@@ -30,6 +30,5 @@ func PutFile(fn string, buf *bytes.Buffer, cfg *config.Config) (location string,
 	if err != nil {
 		return "", err
 	}
-
 	return string(res.Location), nil
 }

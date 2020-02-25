@@ -22,9 +22,14 @@ type IntegSuite struct {
 
 const (
 	defaultsFP = "../config/defaults.yml"
+<<<<<<< HEAD
 	quoteID    = "5e502a88b667f300070a0eb9"
 	// quoteID    = "5cd16f18699e0300c7b10d30"
 	invoiceID = "5cc7b5410765188d68d191ca"
+=======
+	quoteID    = "5cd16f18699e0300c7b10d30"
+	invoiceID  = "5c4f5121ea79e1530d9c152f"
+>>>>>>> dc0eeec2a9c8eed73302ffced7108ed6b7c3140d
 )
 
 // SetupTest method
@@ -124,6 +129,21 @@ func (suite *IntegSuite) TestQuoteSaveToS3() {
 	suite.p = New(req, suite.q, suite.cfg)
 
 	err := suite.p.Quote()
+	suite.NoError(err)
+	location, err := suite.p.SaveToS3()
+	suite.NoError(err)
+	suite.True(location != "")
+}
+
+func (suite *IntegSuite) TestInvoiceSaveToS3() {
+	req := &Request{
+		QuoteID: invoiceID,
+		DocType: "invoice",
+	}
+	suite.cfg.SetStageEnv("test")
+	suite.p = New(req, suite.q, suite.cfg)
+
+	err := suite.p.Invoice()
 	suite.NoError(err)
 
 	location, err := suite.p.SaveToS3()

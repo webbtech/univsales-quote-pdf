@@ -80,6 +80,7 @@ Resources:
           Stage: prod
       Tags:
         BillTo: 'Universal'
+
       VpcConfig:
         SecurityGroupIds:
           - sg-5afb2932
