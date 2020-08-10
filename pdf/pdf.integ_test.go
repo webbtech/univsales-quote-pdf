@@ -24,7 +24,8 @@ const (
 	defaultsFP = "../config/defaults.yml"
 	quoteID    = "5e502a88b667f300070a0eb9"
 	// quoteID    = "5cd16f18699e0300c7b10d30"
-	invoiceID = "5cc7b5410765188d68d191ca"
+	// invoiceID = "5cc7b5410765188d68d191ca"
+	invoiceID = "5e502a88b667f300070a0eb9"
 )
 
 // SetupTest method

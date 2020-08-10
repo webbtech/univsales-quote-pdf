@@ -72,9 +72,10 @@ func (p *PDF) invoiceSummary() {
 		// pdf.Ln(1)
 
 		for _, p := range q.Payments {
-			pdf.CellFormat(115, 6, "", "", 0, "", false, 0, "")
-			pdf.CellFormat(45, 6, p.Date.Format(dateFormat), "", 0, "R", false, 0, "")
-			pdf.CellFormat(35, 6, formatMoney(p.Amount, ""), "", 2, "R", false, 0, "")
+			pdf.CellFormat(110, 6, "", "", 0, "", false, 0, "") // spacer
+			pdf.CellFormat(35, 6, p.Date.Format(dateFormatShort), "", 0, "", false, 0, "")
+			pdf.CellFormat(25, 6, PayTypeMap[p.Type], "", 0, "", false, 0, "")
+			pdf.CellFormat(25, 6, formatMoney(p.Amount, ""), "", 2, "R", false, 0, "")
 			pdf.Ln(1)
 		}
 

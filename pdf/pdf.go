@@ -14,6 +14,7 @@ import (
 
 const (
 	dateFormat        = "January 2, 2006"
+	dateFormatShort   = "Jan 2, 2006"
 	coAddressStreet   = "2514 Hwy 20 E"
 	coAddressCity     = "Welland"
 	coAddressPostal   = "L3B 5N5"
@@ -35,6 +36,13 @@ type PDF struct {
 type Request struct {
 	QuoteID string `json:"quoteID"`
 	DocType string `json:"docType"`
+}
+
+var PayTypeMap = map[string]string{
+	"cash":       "Cash",
+	"check":      "Cheque",
+	"creditCard": "Credit Card",
+	"eTransfer":  "eTransfer",
 }
 
 // New function
