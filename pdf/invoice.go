@@ -58,7 +58,6 @@ func (p *PDF) invoiceTitle() {
 	customerName := fmt.Sprintf("%s %s", q.Customer.Name.First, q.Customer.Name.Last)
 	addressLine1 := fmt.Sprintf("%s", q.JobSheetAddress.Street1)
 	addressLine2 := fmt.Sprintf("%s, %s. %s", q.JobSheetAddress.City, q.JobSheetAddress.Province, q.JobSheetAddress.PostalCode)
-	// address2 := fmt.Sprintf("%s, %s. %s", q.Customer.Address.City, q.Customer.Address.Province, q.Customer.Address.PostalCode)
 	invoiceNo := fmt.Sprintf("%d", q.Number)
 
 	pdf.SetFont("Arial", "", 12)
