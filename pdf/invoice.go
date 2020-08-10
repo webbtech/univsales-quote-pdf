@@ -55,8 +55,9 @@ func (p *PDF) invoiceTitle() {
 		pdf.SetError(err)
 	}
 
-	custName := fmt.Sprintf("%s %s", q.Customer.Name.First, q.Customer.Name.Last)
-	address2 := fmt.Sprintf("%s, %s. %s", q.Customer.Address.City, q.Customer.Address.Province, q.Customer.Address.PostalCode)
+	customerName := fmt.Sprintf("%s %s", q.Customer.Name.First, q.Customer.Name.Last)
+	addressLine1 := fmt.Sprintf("%s", q.JobSheetAddress.Street1)
+	addressLine2 := fmt.Sprintf("%s, %s. %s", q.JobSheetAddress.City, q.JobSheetAddress.Province, q.JobSheetAddress.PostalCode)
 	invoiceNo := fmt.Sprintf("%d", q.Number)
 
 	pdf.SetFont("Arial", "", 12)
@@ -85,15 +86,24 @@ func (p *PDF) invoiceTitle() {
 
 	pdf.Ln(1)
 	pdf.SetFont("Arial", "", 12)
-	pdf.CellFormat(0, 5.5, custName, "", 2, "", false, 0, "")
-	pdf.CellFormat(0, 5.5, q.Customer.Address.Street1, "", 2, "", false, 0, "")
-	pdf.CellFormat(0, 5.5, address2, "", 2, "", false, 0, "")
+	pdf.CellFormat(0, 5.5, customerName, "", 2, "", false, 0, "")
+	pdf.Ln(1)
+	pdf.CellFormat(0, 5.5, addressLine1, "", 2, "", false, 0, "")
+	pdf.CellFormat(0, 5.5, addressLine2, "", 2, "", false, 0, "")
+
+	pdf.SetFont("Arial", "", 9)
+	pdf.SetTextColor(0, 0, 0)
+	pdf.CellFormat(0, 5.5, "(job location)", "", 2, "", false, 0, "")
+	pdf.Ln(2)
+
+	pdf.SetFont("Arial", "", 12)
 	if v, ok := q.Customer.PhoneMap["mobile"]; ok {
 		pdf.CellFormat(0, 5.5, fmt.Sprintf("Mobile %s", v), "", 2, "", false, 0, "")
 	}
 	if v, ok := q.Customer.PhoneMap["home"]; ok {
 		pdf.CellFormat(0, 5.5, fmt.Sprintf("Home %s", v), "", 2, "", false, 0, "")
 	}
+	pdf.Ln(2)
 	pdf.SetTextColor(0, 0, 200)
 	pdf.SetFont("Arial", "U", 12)
 	if q.Customer.Email != "" {
