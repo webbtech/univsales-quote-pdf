@@ -102,7 +102,7 @@ func (p *PDF) quoteTitle() {
 	if v, ok := q.Customer.PhoneMap["home"]; ok {
 		pdf.CellFormat(0, 5.5, fmt.Sprintf("Home %s", v), "", 2, "", false, 0, "")
 	}
-	pdf.Ln(2)
+	// pdf.Ln(2)
 	pdf.SetTextColor(0, 0, 200)
 	pdf.SetFont("Arial", "U", 12)
 	if q.Customer.Email != "" {

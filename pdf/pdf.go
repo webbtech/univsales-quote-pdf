@@ -38,6 +38,7 @@ type Request struct {
 	DocType string `json:"docType"`
 }
 
+// PayTypeMap map
 var PayTypeMap = map[string]string{
 	"cash":       "Cash",
 	"check":      "Cheque",
