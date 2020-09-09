@@ -5,14 +5,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/pulpfree/univsales-quote-pdf/model"
+	log "github.com/sirupsen/logrus"
 
+	"github.com/pulpfree/univsales-quote-pdf/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // DB and Table constants
