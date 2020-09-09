@@ -22,6 +22,14 @@ Parameters:
   ParamProjectName:
     Description: Project name
     Type: String
+  ParamSecurityGroupIds:
+    Description: SecurityGroupIds
+    ConstraintDescription: 'must be list of EC2 security group ids'
+    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+  ParamSubnetIds:
+    Description: SecurityGroupIds
+    ConstraintDescription: 'must be list of EC2 subnet ids'
+    Type: 'List<AWS::EC2::Subnet::Id>'
 
 Resources:
   RestApi:
@@ -80,14 +88,9 @@ Resources:
           Stage: prod
       Tags:
         BillTo: 'Universal'
-
       VpcConfig:
-        SecurityGroupIds:
-          - sg-5afb2932
-          - sg-8f6baee7
-        SubnetIds:
-          - subnet-0da8d176
-          - subnet-7f092816
+        SecurityGroupIds: !Ref ParamSecurityGroupIds
+        SubnetIds: !Ref ParamSubnetIds
       Events:
         Create:
           Type: Api
@@ -121,6 +124,7 @@ Resources:
       Handler: /authorizer
       Runtime: go1.x
       Role: !GetAtt AuthLambdaRole.Arn
+      Timeout: 10
       MemorySize: 256
       Tags:
         BillTo: 'Universal'
@@ -249,12 +253,21 @@ Outputs:
   ApiArn:
     Description: "API ARN"
     Value: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/"
+  ApiFQDN:
+    Description: "API Domain Name"
+    Value: !Ref ParamCustomDomainName
+  ApiURL:
+    Description: "API Url"
+    Value: !Sub "https://${ParamCustomDomainName}/"
   LambdaARN:
     Description: The Lambda Arn
     Value: !GetAtt Lambda.Arn
   LambdaRoleArn:
     Description: "Lambda Role ARN"
     Value: !GetAtt LambdaRole.Arn
-  DomainInvokeURL:
-    Description: "Domain Invoke URL"
-    Value: !Sub "https://${ParamCustomDomainName}"
+  AuthLambdaArn:
+    Description: "Authorizer Lambda ARN"
+    Value: !GetAtt AuthLambda.Arn
+  AuthLambdaRoleArn:
+    Description: "Authorizer Lambda Role ARN"
+    Value: !GetAtt AuthLambdaRole.Arn
