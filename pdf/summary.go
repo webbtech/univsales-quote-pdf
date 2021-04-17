@@ -41,8 +41,9 @@ func (p *PDF) quoteSummary() {
 	// Payment methods
 	pdf.Ln(4)
 	pdf.SetFont("Arial", "B", 12)
-	pdf.CellFormat(40, 6, "Payment Due On Completion", "", 2, "", false, 0, "")
-	pdf.CellFormat(40, 6, "Accepted Payment methods are: Cash, Cheque, or eTransfer", "", 2, "", false, 0, "")
+	pdf.CellFormat(40, 8, "Payment Due On Completion", "", 2, "", false, 0, "")
+	pdf.CellFormat(40, 8, "Accepted Payment methods are: Cash, Cheque, or eTransfer", "", 2, "", false, 0, "")
+	pdf.CellFormat(40, 8, fmt.Sprintf("Make eTransfer payments to %s", coEmail), "", 2, "", false, 0, "")
 }
 
 // invoiceSummary method

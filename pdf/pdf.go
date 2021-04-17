@@ -15,11 +15,11 @@ import (
 const (
 	dateFormat        = "January 2, 2006"
 	dateFormatShort   = "Jan 2, 2006"
-	coAddressStreet   = "2514 Hwy 20 E"
+	coAddressStreet   = "18 Chantler Rd."
 	coAddressCity     = "Welland"
-	coAddressPostal   = "L3B 5N5"
+	coAddressPostal   = "L3C 4M5"
 	coAddressProvince = "Ontario"
-	coEmail           = "sales@universalwindows.ca"
+	coEmail           = "joe@universalwindows.ca"
 	coDomain          = "universalwindows.ca"
 )
 
