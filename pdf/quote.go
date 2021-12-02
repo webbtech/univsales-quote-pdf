@@ -34,7 +34,13 @@ func (p *PDF) Quote() (err error) {
 	p.otherList()
 	p.quoteSummary()
 
-	return err
+	// fpdf has in interesting way of trapping errors where the first error caught is persisted,
+	// so in this setup, an error could occur in the quoteTitle and still run the remaining functions
+	if pdf.Err() {
+		return pdf.Error()
+	}
+
+	return nil
 }
 
 func (p *PDF) quoteTitle() {
@@ -50,11 +56,18 @@ func (p *PDF) quoteTitle() {
 	rsp, err := http.Get(p.cfg.LogoURI)
 	if err == nil {
 		tp = pdf.ImageTypeFromMime(rsp.Header["Content-Type"][0])
+		if p.pdf.Err() { // tp produced error because of invalid image so we need to clear and create something that makes a little more sense
+			pdf.ClearError()
+			pdf.SetError(fmt.Errorf("Invalid or missing filepath: %s", p.cfg.LogoURI))
+			return
+		}
 		imgInfo = gofpdf.ImageOptions{ImageType: tp}
 		pdf.RegisterImageReader(p.cfg.LogoURI, tp, rsp.Body)
 	} else {
 		pdf.SetError(err)
+		return
 	}
+
 	customerName := fmt.Sprintf("%s %s", q.Customer.Name.First, q.Customer.Name.Last)
 	addressLine1 := fmt.Sprintf("%s", q.JobSheetAddress.Street1)
 	addressLine2 := fmt.Sprintf("%s, %s. %s", q.JobSheetAddress.City, q.JobSheetAddress.Province, q.JobSheetAddress.PostalCode)
