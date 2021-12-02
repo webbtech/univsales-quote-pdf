@@ -86,6 +86,7 @@ func HandleRequest(req events.APIGatewayProxyRequest) (events.APIGatewayProxyRes
 		err = p.Invoice()
 	}
 	if err != nil {
+		log.Error(err) // NOTE: hack here, ProxyRes doesn't appear to be logging errors
 		return pres.ProxyRes(pres.Response{
 			Timestamp: t.Unix(),
 		}, hdrs, err), nil
@@ -93,6 +94,7 @@ func HandleRequest(req events.APIGatewayProxyRequest) (events.APIGatewayProxyRes
 
 	location, err := p.SaveToS3()
 	if err != nil {
+		log.Error(err)
 		return pres.ProxyRes(pres.Response{
 			Timestamp: t.Unix(),
 		}, hdrs, err), nil

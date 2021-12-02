@@ -126,6 +126,7 @@ func (suite *IntegSuite) TestQuoteSaveToS3() {
 
 	err := suite.p.Quote()
 	suite.NoError(err)
+
 	location, err := suite.p.SaveToS3()
 	suite.NoError(err)
 	suite.True(location != "")
